@@ -1,0 +1,39 @@
+name: Build analysis-dask-base
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'images/analysisbase-dask/**'
+      - '.github/workflows/analysisbase-dask.yml'
+      - '.github/workflows/_build-and-push.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'images/analysisbase-dask/**'
+      - '.github/workflows/analysisbase-dask.yml'
+      - '.github/workflows/_build-and-push.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to apply (e.g. 25.2.27)'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/_build-and-push.yml
+    with:
+      images: |-
+        sslhep/analysis-dask-base
+        hub.opensciencegrid.org/usatlas/analysis-dask-base
+      context: images/analysisbase-dask
+      dockerfile: images/analysisbase-dask/docker/Dockerfile
+      platforms: linux/amd64
+      push: ${{ github.event_name != 'pull_request' }}
+      version: ${{ github.event.inputs.version || '' }}
+    secrets: inherit

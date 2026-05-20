@@ -1,0 +1,143 @@
+labextension:
+  factory:
+    module: dask_kubernetes
+    class: KubeCluster
+    args: []
+    kwargs: {}
+  default:
+    workers: 3
+    adapt:
+      minimum: 0
+      maximum: 1000
+  initial: []
+
+distributed:
+  dashboard:
+    link: "https://n4dask.af.uchicago.edu/{host}/status"
+    # link: "{scheme}://{host}:{port}/status"
+  scheduler:
+    work-stealing: false
+
+kubernetes:
+  name: "dask-{user}-{uuid}"
+  namespace: af-jupyter
+  env: {}
+  count:
+    start: 1
+    min: 1
+    max: 5000
+  image: "ghcr.io/dask/dask:latest"
+  resources: {}
+  scheduler-service-wait-timeout: 30
+  scheduler-service-name-resolution-retries: 20
+
+  scheduler-service-template:
+    apiVersion: v1
+    kind: Service
+    spec:
+      selector:
+        dask.org/cluster-name: "" # Cluster name will be added automatically
+        dask.org/component: scheduler
+      ports:
+        - name: tcp-comm
+          protocol: TCP
+          port: 8786
+          targetPort: 8786
+        - name: http-dashboard
+          protocol: TCP
+          port: 8787
+          targetPort: 8787
+
+  scheduler-pdb-template:
+    apiVersion: policy/v1
+    kind: PodDisruptionBudget
+    spec:
+      minAvailable: 1
+      selector:
+        matchLabels:
+          dask.org/cluster-name: "" # Cluster name will be added automatically
+          dask.org/component: scheduler
+
+  worker-template-path: null
+
+  scheduler-template:
+    kind: Pod
+    metadata:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: jupyter
+      containers:
+        - name: dask-scheduler
+          # image: ghcr.io/dask/dask:latest
+          image: hub.opensciencegrid.org/usatlas/analysis-dask-base:dev
+          imagePullPolicy: Always
+          env:
+            - name: DASK_BOKEH_PREFIX
+              value: "{host}"
+          args: ["dask", "scheduler", "--port", "8786", "--bokeh-port", "8787"]
+          resources:
+            limits:
+              cpu: "2.0"
+              memory: 20G
+            requests:
+              cpu: "1.5"
+              memory: 10G
+
+  worker-template:
+    kind: Pod
+    metadata:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: jupyter
+      containers:
+        - name: dask-worker
+          image: hub.opensciencegrid.org/usatlas/analysis-dask-base:dev
+          # image: ghcr.io/dask/dask:latest
+          imagePullPolicy: Always
+          args:
+            [
+              "dask",
+              "worker",
+              "--nworkers",
+              "1",
+              "--nthreads",
+              "1",
+              "--memory-limit",
+              "3GB",
+              "--death-timeout",
+              "60",
+            ]
+          resources:
+            limits:
+              cpu: "4"
+              memory: 10G
+            requests:
+              cpu: "1.5"
+              memory: "3.5G"
+          volumeMounts:
+          - mountPath: /home
+            name: nfs-home
+          - mountPath: /data
+            name: ceph-data
+            subPath: data
+          - mountPath: /cvmfs
+            mountPropagation: HostToContainer
+            name: cvmfs
+      volumes:
+      - name: nfs-home
+        nfs:
+          path: /export/home
+          server: nfs.af.uchicago.edu
+      - cephfs:
+          monitors:
+          - 192.170.240.135:6789
+          - 192.170.240.148:6789
+          - 192.170.240.192:6789
+          secretRef:
+            name: ceph-secret
+          user: admin
+        name: ceph-data
+      - hostPath:
+          path: /cvmfs
+          type: ""
+        name: cvmfs

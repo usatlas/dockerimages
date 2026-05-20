@@ -1,0 +1,41 @@
+name: Build ml-platform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'images/ml-platform/**'
+      - '.github/workflows/ml-platform.yml'
+      - '.github/workflows/_build-and-push.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'images/ml-platform/**'
+      - '.github/workflows/ml-platform.yml'
+      - '.github/workflows/_build-and-push.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to apply (e.g. 2026.5.19)'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/_build-and-push.yml
+    with:
+      images: |-
+        ghcr.io/maniaclab/ml-platform
+        docker.io/ivukotic/ml_platform
+        hub.opensciencegrid.org/usatlas/ml-platform
+      context: images/ml-platform
+      dockerfile: images/ml-platform/Dockerfile
+      platforms: linux/amd64
+      push: ${{ github.event_name != 'pull_request' }}
+      version: ${{ github.event.inputs.version || '' }}
+      build-args: CUDA_VERSION=12.6
+    secrets: inherit

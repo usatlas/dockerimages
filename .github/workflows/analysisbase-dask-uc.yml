@@ -1,0 +1,73 @@
+name: Build analysis-dask-uc
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'images/analysisbase-dask-uc/**'
+      - '.github/workflows/analysisbase-dask-uc.yml'
+      - '.github/workflows/_build-and-push.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'images/analysisbase-dask-uc/**'
+      - '.github/workflows/analysisbase-dask-uc.yml'
+      - '.github/workflows/_build-and-push.yml'
+  workflow_run:
+    # Fires when the base image is built on main; triggers a rebuild of this layer.
+    workflows: ['Build analysis-dask-base']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      base_tag:
+        description: 'Base image tag to build against (e.g. sha-abc1234 or latest)'
+        required: false
+        default: 'latest'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    # Skip if base workflow ran but failed.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    outputs:
+      base-tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - name: Resolve base tag
+        id: tag
+        run: |
+          case "$EVENT_NAME" in
+            workflow_run)
+              echo "value=sha-${SHA::7}" >> "$GITHUB_OUTPUT"
+              ;;
+            workflow_dispatch)
+              echo "value=${INPUT_BASE_TAG}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              # push / pull_request: validate against current latest
+              echo "value=latest" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_BASE_TAG: ${{ github.event.inputs.base_tag }}
+
+  build:
+    needs: prepare
+    uses: ./.github/workflows/_build-and-push.yml
+    with:
+      images: |-
+        sslhep/analysis-dask-uc
+        hub.opensciencegrid.org/usatlas/analysis-dask-uc
+      context: images/analysisbase-dask-uc
+      dockerfile: images/analysisbase-dask-uc/Dockerfile
+      platforms: linux/amd64
+      push: ${{ github.event_name != 'pull_request' }}
+      version: ${{ needs.prepare.outputs.base-tag }}
+      build-args: BASE_TAG=${{ needs.prepare.outputs.base-tag }}
+    secrets: inherit

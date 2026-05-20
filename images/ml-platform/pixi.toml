@@ -1,0 +1,118 @@
+[workspace]
+name = "ml-platform"
+version = "2026.5.15"
+description = "MaNIAC Lab ML platform environment"
+channels = ["conda-forge"]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64"]
+requires-pixi = ">=0.68.0"
+
+[feature.mlbase]
+platforms = ["linux-64"]
+
+[feature.mlbase.dependencies]
+
+# Python
+python = "==3.12"
+pixi-kernel = "*"
+
+# CERN ROOT
+root = "*"
+
+# Java (OpenJDK 8 in ml_base)
+openjdk = "*"
+
+# ML frameworks
+gymnasium = "*"
+keras = "*"
+keras-tuner = "*"
+tensorflow-datasets = "*"
+
+# Data science
+cython = "*"
+h5py = "*"
+numpy = "*"
+pandas = "*"
+pyarrow = "*"
+pytables = "*"
+scikit-learn = "*"
+scipy = "*"
+
+# Visualization
+bokeh = "*"
+graphviz = "*"
+matplotlib = "*"
+seaborn = "*"
+
+# Jupyter ecosystem
+dask-labextension = "*"
+ipykernel = "*"
+ipywidgets = "*"
+jupyter = "*"
+jupyter_bokeh = "*"
+jupyter-collaboration = "*"
+jupyter_client = ">=8.6.3"
+jupyterlab = "*"
+jupyterlab-git = "*"
+jupyterlab_server = "*"
+metakernel = "*"
+pycrdt = "*"
+rise = "*"
+
+# HEP
+uproot = "*"
+
+# System tools
+compilers = "*"
+curl = "*"
+git = "*"
+jq = "*"
+make = "*"
+pkg-config = "*"
+rsync = "*"
+unzip = "*"
+vim = "*"
+wget = "*"
+zip = "*"
+
+# Libraries
+freetype = "*"
+hdf5 = "*"
+libpng = "*"
+tbb = "*"
+zeromq = "*"
+zlib = "*"
+
+# Other
+elasticsearch = "*"
+imageio = "*"
+plumbum = "*"
+pillow = "*"
+qtpy = "*"
+requests = "*"
+tqdm = "*"
+
+[feature.mlbase.pypi-dependencies]
+# Packages NOT on conda-forge (or easier from PyPI)
+jupyter-mcp-server = ">=1.0.0"
+
+[feature.mlgpu.system-requirements]
+cuda = "13.0"
+
+[feature.mlcpu.dependencies]
+tensorflow = "*"
+
+[feature.mlgpu.dependencies]
+tensorflow-gpu = "*"
+
+[feature.dev.dependencies]
+python = "==3.11"
+tbump = "*"
+
+[feature.dev.tasks]
+tbump = { cmd = "tbump", description = "Run tbump" }
+bump = { cmd = "tbump $(date +\"%Y.%-m.%-d\")", description = "Run tbump with current date" }
+
+[environments]
+dev = ["dev"]
+mlcpu = ["mlbase", "mlcpu"]
+ml = ["mlbase", "mlgpu"]
