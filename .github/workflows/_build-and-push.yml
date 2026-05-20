@@ -46,7 +46,7 @@ on:
         required: false
 
 jobs:
-  build:
+  docker:
     runs-on: ubuntu-latest
     permissions:
       contents: read
