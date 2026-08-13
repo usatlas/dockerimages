@@ -25,12 +25,15 @@ on:
         required: false
         default: 'latest'
 
+permissions: {}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   prepare:
+    name: Resolve base image tag
     runs-on: ubuntu-latest
     # Skip if base workflow ran but failed.
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
@@ -70,4 +73,8 @@ jobs:
       push: ${{ github.event_name != 'pull_request' }}
       version: ${{ needs.prepare.outputs.base-tag }}
       build-args: BASE_TAG=${{ needs.prepare.outputs.base-tag }}
-    secrets: inherit
+    secrets:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      OSG_HARBOR_USERNAME: ${{ secrets.OSG_HARBOR_USERNAME }}
+      OSG_HARBOR_PASSWORD: ${{ secrets.OSG_HARBOR_PASSWORD }}
