@@ -20,6 +20,8 @@ on:
         required: false
         default: ''
 
+permissions: {}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -36,4 +38,8 @@ jobs:
       platforms: linux/amd64
       push: ${{ github.event_name != 'pull_request' }}
       version: ${{ github.event.inputs.version || '' }}
-    secrets: inherit
+    secrets:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      OSG_HARBOR_USERNAME: ${{ secrets.OSG_HARBOR_USERNAME }}
+      OSG_HARBOR_PASSWORD: ${{ secrets.OSG_HARBOR_PASSWORD }}

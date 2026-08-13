@@ -1,0 +1,10 @@
+rules:
+  dangerous-triggers:
+    ignore:
+      # workflow_run here is scoped to branches: [main] and only reacts to
+      # completed runs of "Build analysis-dask-base". That base workflow only
+      # pushes images on non-pull_request events, and a workflow_run for a
+      # branch only matches runs that actually executed on that branch, so a
+      # fork PR cannot forge a "main" workflow_run event. This is the
+      # intentional cascading-build trigger for the downstream uc image.
+      - analysisbase-dask-uc.yml
